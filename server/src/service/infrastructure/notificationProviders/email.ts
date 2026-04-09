@@ -78,9 +78,12 @@ export class EmailProvider implements INotificationProvider {
 	}
 
 	private buildSubject(message: NotificationMessage): string {
+		// Check if this is an escalation
+		const isEscalation = message.metadata.notificationReason === "escalation";
+
 		switch (message.type) {
 			case "monitor_down":
-				return `Monitor ${message.monitor.name} is down`;
+				return isEscalation ? `Escalated: Monitor ${message.monitor.name} is still down` : `Monitor ${message.monitor.name} is down`;
 			case "monitor_up":
 				return `Monitor ${message.monitor.name} is back up`;
 			case "threshold_breach":
