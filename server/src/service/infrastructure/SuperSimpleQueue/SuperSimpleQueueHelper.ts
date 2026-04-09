@@ -177,6 +177,41 @@ export class SuperSimpleQueueHelper implements ISuperSimpleQueueHelper {
 						stack: error instanceof Error ? error.stack : undefined,
 					});
 				});
+
+				// Step 8. Handle escalated notifications for active incidents
+				try {
+					const activeIncident = await this.incidentsRepository.findActiveByMonitorId(monitorId, teamId);
+					if (activeIncident && Array.isArray(statusChangeResult.monitor.escalations) && statusChangeResult.monitor.escalations.length > 0) {
+						const now = Date.now();
+						const incidentStart = new Date(activeIncident.startTime).getTime();
+						const sent = (activeIncident as any).sentEscalations ?? [];
+						for (let i = 0; i < statusChangeResult.monitor.escalations.length; i++) {
+							const esc = statusChangeResult.monitor.escalations[i];
+							const delayMs = (esc.delayMinutes || 0) * 60000;
+							if (delayMs <= 0) continue;
+							if (now - incidentStart >= delayMs && !sent.includes(i)) {
+								// send escalation notifications for this escalation
+								await this.notificationsService.sendEscalationNotifications(esc.notificationIds ?? [], statusChangeResult.monitor, status).catch((err) => {
+									this.logger.warn({
+										message: `Failed to send escalation notifications for monitor ${monitorId}: ${err instanceof Error ? err.message : "Unknown error"}`,
+										service: SERVICE_NAME,
+										method: "getMonitorJob",
+									});
+								});
+								// mark escalation as sent on the incident
+								sent.push(i);
+								await this.incidentsRepository.updateById(activeIncident.id, teamId, { sentEscalations: sent }).catch(() => {});
+							}
+						}
+					}
+				} catch (err) {
+					this.logger.debug({
+						message: `Error while processing escalations for monitor ${monitorId}`,
+						service: SERVICE_NAME,
+						method: "getMonitorJob",
+						stack: err instanceof Error ? err.stack : undefined,
+					});
+				}
 			} catch (error: unknown) {
 				this.logger.warn({
 					message: error instanceof Error ? error.message : "Unknown error",

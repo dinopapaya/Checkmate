@@ -58,6 +58,19 @@ export interface Monitor {
 	updatedAt: string;
 }
 
+export interface Escalation {
+	/** delay in minutes after incident start to fire this escalation */
+	delayMinutes: number;
+	/** notification IDs to send when this escalation triggers */
+	notificationIds: string[];
+	name?: string;
+}
+
+// allow monitors to include escalation rules
+export interface MonitorWithEscalations extends Monitor {
+	escalations?: Escalation[];
+}
+
 export interface MonitorsSummary {
 	totalMonitors: number;
 	upMonitors: number;

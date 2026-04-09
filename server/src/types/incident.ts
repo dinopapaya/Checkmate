@@ -16,6 +16,8 @@ export interface Incident {
 	resolvedBy?: string | null;
 	resolvedByEmail?: string | null;
 	comment?: string | null;
+	/** indexes of escalations already fired for this incident */
+	sentEscalations?: number[];
 	createdAt: string;
 	updatedAt: string;
 }
