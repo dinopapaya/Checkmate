@@ -202,7 +202,7 @@ const CreateMonitorPage = () => {
 		resolver: zodResolver(schema),
 		defaultValues: defaults,
 	});
-	const { control, watch, handleSubmit, clearErrors } = form;
+	const { control, watch, handleSubmit, clearErrors, setValue } = form;
 
 	useEffect(() => {
 		form.reset(defaults);
@@ -212,6 +212,7 @@ const CreateMonitorPage = () => {
 
 	const watchedUseAdvancedMatching = watch("useAdvancedMatching") as boolean;
 	const watchGeoCheckEnabled = watch("geoCheckEnabled") as boolean;
+	const watchedEscalatedNotifications = watch("escalatedNotifications") ?? [];
 
 	useEffect(() => {
 		clearErrors();
@@ -758,6 +759,102 @@ const CreateMonitorPage = () => {
 											))}
 										</Stack>
 									)}
+
+									<Divider />
+									<Typography variant="subtitle2">Escalated notifications</Typography>
+									<Typography
+										variant="body2"
+										color="text.secondary"
+									>
+										Send additional alerts if the incident is still active after a set
+										number of minutes.
+									</Typography>
+									{watchedEscalatedNotifications.map((rule, ruleIndex) => {
+										const selectedRuleNotifications = notificationOptions.filter((n) =>
+											(rule.notificationIds ?? []).includes(n.id)
+										);
+										return (
+											<Stack
+												key={`escalation-${ruleIndex}`}
+												direction={{ xs: "column", md: "row" }}
+												spacing={theme.spacing(LAYOUT.SM)}
+												alignItems={{ xs: "stretch", md: "center" }}
+											>
+												<TextField
+													type="number"
+													fieldLabel="After minutes"
+													value={rule.afterMinutes ?? ""}
+													onChange={(e) => {
+														const next = [...watchedEscalatedNotifications];
+														next[ruleIndex] = {
+															...next[ruleIndex],
+															afterMinutes: Number(e.target.value),
+														};
+														setValue("escalatedNotifications", next, {
+															shouldDirty: true,
+															shouldValidate: true,
+														});
+													}}
+													inputProps={{ min: 1 }}
+													sx={{ minWidth: { md: 180 } }}
+												/>
+												<Autocomplete
+													multiple
+													options={notificationOptions}
+													value={selectedRuleNotifications}
+													getOptionLabel={(option) => option.name}
+													onChange={(
+														_: unknown,
+														newValue: typeof notificationOptions
+													) => {
+														const next = [...watchedEscalatedNotifications];
+														next[ruleIndex] = {
+															...next[ruleIndex],
+															notificationIds: newValue.map((n) => n.id),
+														};
+														setValue("escalatedNotifications", next, {
+															shouldDirty: true,
+															shouldValidate: true,
+														});
+													}}
+													isOptionEqualToValue={(option, value) => option.id === value.id}
+												/>
+												<IconButton
+													size="small"
+													onClick={() => {
+														setValue(
+															"escalatedNotifications",
+															watchedEscalatedNotifications.filter(
+																(_, idx) => idx !== ruleIndex
+															),
+															{ shouldDirty: true, shouldValidate: true }
+														);
+													}}
+													aria-label="Remove escalation notification rule"
+												>
+													<Trash2 size={16} />
+												</IconButton>
+											</Stack>
+										);
+									})}
+									<Button
+										variant="outlined"
+										onClick={() => {
+											setValue(
+												"escalatedNotifications",
+												[
+													...watchedEscalatedNotifications,
+													{
+														afterMinutes: 15,
+														notificationIds: [],
+													},
+												],
+												{ shouldDirty: true, shouldValidate: true }
+											);
+										}}
+									>
+										Add escalation rule
+									</Button>
 								</Stack>
 							);
 						}}

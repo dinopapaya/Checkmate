@@ -90,6 +90,7 @@ export class IncidentService implements IIncidentService {
 					status: true,
 					statusCode,
 					message,
+					triggeredEscalationMinutes: [],
 				};
 				return await this.incidentsRepository.create(incident);
 			}
