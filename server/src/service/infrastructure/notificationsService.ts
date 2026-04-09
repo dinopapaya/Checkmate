@@ -171,7 +171,7 @@ export class NotificationsService implements INotificationsService {
 		const escalationDecision: MonitorActionDecision = {
 			...decision,
 			shouldSendNotification: true,
-			notificationReason: "status_change",
+			notificationReason: "escalation",
 		};
 		const notificationMessage = this.notificationMessageBuilder.buildMessage(monitor, monitorStatusResponse, escalationDecision, clientHost);
 
